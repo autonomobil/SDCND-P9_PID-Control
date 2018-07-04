@@ -25,7 +25,7 @@ The implementation of the controller was rather easy, but tuning of the paramete
 * The proportional part of the controller tries to steer the vehicle to the centre line proportional to the negative CTE. Due to inertia and other physical properties, a P-controller is not sufficient, as it starts to oscillate and overload the vehicle from left to right.
 
 ##### I
-* The integral part of the controller tries a mitigate the effect of a bias towards one direction.
+* The integral part of the controller tries to mitigate the effect of a bias towards one direction. This part is the least effective of all and fails almost instantly.
 
 
 ##### D
