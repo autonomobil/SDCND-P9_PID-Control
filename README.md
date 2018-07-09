@@ -44,7 +44,9 @@ As final parameter ``Kp = 0.15``, ``Ki = 0.003``  and ``Kd = 5.0`` were chosen. 
 
 These formulas calculate the actual steering value(from -1 to 1) depended on the car speed, which is sent to the simulator:
 ``double p_val = -(Kp_ - speed/500) * p_error;``
+
 ``double i_val = -Ki_ * i_error;``
+
 ``double d_val = -(Kd_ + speed/50) * d_error;``
 
 ``steering_val = p_val + i_val + d_val;``
