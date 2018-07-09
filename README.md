@@ -33,15 +33,23 @@ The implementation of the controller was rather easy, but tuning of the paramete
 
 
 I then combined P and D controller, which (with the right parameters) get good results:
-* Completing the track without mistakes @max 80mph
+* Completing the track without mistakes @max 40mph
 
-After that I combined PD-controller with the I-controller with a small Ki parameter just to take out some mistakes.  The formula for the steering signal as calculated as follows:  As you can see in the graphic below, this produces smaller error spikes than no I-controller:
+I wanted more speed so after that I combined PD-controller with the I-controller with a small Ki parameter just to take out some mistakes. The error term for the I-controller is reset when CTE is close to zero (see ``PID.cpp`` function ``UpdateError``) As you can see in the graphic below, this produces smaller error spikes than no I-controller:
 ![img1]
 
 The magenta line indicates when the vehicle has left the track and the simulator is reset.
 
-As final parameter ``Kp = 0.1``, ``Ki = 0.003``  and ``Kd = 5.0`` were chosen. These parameters allowed the controller to finish the track with max 80mph.
+As final parameter ``Kp = 0.15``, ``Ki = 0.003``  and ``Kd = 5.0`` were chosen. The maximal throttle value was set to ``max_throttle = 0.6``. The actual throttle value is calculated with this formula: ``throttle = max_throttle - fabs(steer_value);``. These parameters allowed the controller to finish the track with max 60mph.
 
+These formulas calculate the actual steering value(from -1 to 1) depended on the car speed, which is sent to the simulator:
+``double p_val = -(Kp_ - speed/500) * p_error;``
+``double i_val = -Ki_ * i_error;``
+``double d_val = -(Kd_ + speed/50) * d_error;``
+
+``steering_val = p_val + i_val + d_val;``
+
+More detail can be found in ``PID.cpp`` lines 56-81.
 
 ## Comments
 * Output data will be generated to the folder ``build``

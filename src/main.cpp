@@ -13,10 +13,10 @@ using json = nlohmann::json;
 
 // data stream output
 std::ofstream out_data;
-std::ifstream parameter_data;
+std::fstream parameter_data;
 
-// Kp , Ki , Kd
-double parameter[3] = {0.1, 0.003, 5};
+// Kp , Ki , Kd, Throttle_max
+double parameter[4] = {0.15, 0.003, 5.0, 0.6};
 
 // For converting back and forth between radians and degrees.
 constexpr double pi() { return M_PI; }
@@ -31,22 +31,47 @@ void reset_simulator(uWS::WebSocket<uWS::SERVER>& ws){
 
 }
 
+inline bool exists_test(const std::string& name) {
+  struct stat buffer;
+  return (stat (name.c_str(), &buffer) == 0);
+}
+
 void read_parameter(){
-  string parameter_str[3];
 
-  parameter_data.open("parameter.dat", ios::in);
+    if(exists_test("parameter.dat")){
+      string parameter_str[4];
 
-  parameter_data >> parameter_str[0];
-  parameter_data >> parameter_str[1];
-  parameter_data >> parameter_str[2];
-  parameter[0] = std::stod(parameter_str[0]);
-  parameter[1] = std::stod(parameter_str[1]);
-  parameter[2] = std::stod(parameter_str[2]);
+      parameter_data.open("parameter.dat", ios::in);
 
-	cout << "Parameter loaded"<< endl;
-	cout << "Kp: " << parameter_str[0] << '\t' << "Ki: " << parameter_str[1] << '\t'  << "Kd: " << parameter_str[2] << endl;
+      parameter_data >> parameter_str[0];
+      parameter_data >> parameter_str[1];
+      parameter_data >> parameter_str[2];
+      parameter_data >> parameter_str[3];
+      parameter[0] = std::stod(parameter_str[0]);
+      parameter[1] = std::stod(parameter_str[1]);
+      parameter[2] = std::stod(parameter_str[2]);
+      parameter[3] = std::stod(parameter_str[3]);
 
-  parameter_data.close();
+      cout << "Parameter loaded"<< endl;
+      // cout << "Kp: " << parameter_str[0] << '\t';
+      // cout << "Ki: " << parameter_str[1] << '\t';
+      // cout << "Kd: " << parameter_str[2] << '\t';
+      // cout << "max Throttle: " << parameter_str[3] << endl;
+
+      parameter_data.close();
+
+    }
+    // if file not exist, create it
+    else{
+      parameter_data.open("parameter.dat", ios::out);
+      parameter_data << parameter[0] << ' ';
+      parameter_data << parameter[1] << ' ';
+      parameter_data << parameter[2] << ' ';
+      parameter_data << parameter[3] << ' ' << std::endl;;
+
+      parameter_data.close();
+
+    }
 }
 
 // Checks if the SocketIO event has JSON data.
@@ -72,12 +97,17 @@ int main()
 
   PID pid;
 
-  // read_parameter();
+  read_parameter();
 
   // Initialize the pid variable.
   double Kp = parameter[0];
   double Ki = parameter[1];
   double Kd = parameter[2];
+
+  cout << "Kp: " << Kp << '\t';
+  cout << "Ki: " << Ki << '\t';
+  cout << "Kd: " << Kd << '\t';
+  cout << "Max Throttle: " << parameter[3]  << endl;
 
   pid.Init(parameter[0], parameter[1], parameter[2]);
 
@@ -106,10 +136,11 @@ int main()
           double speed = std::stod(j[1]["speed"].get<std::string>());
           double angle = std::stod(j[1]["steering_angle"].get<std::string>());
           double steer_value;
+          double throttle;
           // count timesteps
           long int timestep = pid.Time_stepper();
 
-          if (cte > 7 || cte < -7) {
+          if (cte > 5 || cte < -5) {
             out_data.close();
             reset_simulator(ws);
 
@@ -123,6 +154,9 @@ int main()
 
             // Calculate steering value
             steer_value = pid.TotalError(speed);
+
+            throttle = parameter[3] - fabs(steer_value);
+            //throttle = throttle * 1.0 / ( 1.0 + fabs(steer_value));
           }
 
           // out_data("data_out.txt", ios::app);
@@ -133,11 +167,14 @@ int main()
           out_data << angle << endl;
 
           // DEBUG
-          std::cout << "Timestep: " << timestep  << '\t' << " CTE: " << cte << '\t'  << " Steering Value: " << steer_value << std::endl;
+          std::cout << "Timestep: " << timestep  << '\t';
+          std::cout << " CTE: " << cte << '\t';
+          std::cout << " Throttle: " << throttle << '\t';
+          std::cout << " Steering Value: " << steer_value << std::endl;
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.8;
+          msgJson["throttle"] = throttle;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           // std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);

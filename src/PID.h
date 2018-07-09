@@ -1,6 +1,7 @@
-#include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <chrono>
+#include <math.h>
 #ifndef PID_H
 #define PID_H
 
@@ -14,8 +15,12 @@ public:
   double p_error;
   double i_error;
   double d_error;
-
+  // d_error accumalated
+  double d_error_acc;
   double last_cte;
+
+  // steering value accumalated
+  double steering_val_acc;
 
   // clock
   chrono::time_point<chrono::steady_clock> m_timeBegin;
